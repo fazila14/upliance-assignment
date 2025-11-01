@@ -18,6 +18,8 @@ import {
   InputLabel,
   Alert,
   Box,
+  Stack,
+  Chip,
 } from '@mui/material';
 import { Add as AddIcon, Delete as DeleteIcon } from '@mui/icons-material';
 
@@ -157,6 +159,7 @@ export default function CreateRecipe() {
         </CardContent>
       </Card>
 
+      {/* Ingredients Section */}
       <Typography variant="h6" gutterBottom>
         Ingredients
       </Typography>
@@ -215,116 +218,122 @@ export default function CreateRecipe() {
         Add Ingredient
       </Button>
 
+      {/* Steps Section */}
       <Typography variant="h6" gutterBottom>
         Steps
       </Typography>
       {steps.map((step) => (
-        <Card key={step.id} sx={{ mb: 2, boxShadow: 2, '&:hover': { boxShadow: 4 } }}>
+        <Card key={step.id} sx={{ mb: 3, boxShadow: 3 }}>
           <CardContent>
-            <Grid container spacing={2}>
-              <Grid item xs={12}>
-                <TextField
-                  fullWidth
-                  multiline
-                  rows={3}
-                  label="Step Description"
-                  value={step.description}
-                  onChange={(e) => updateStep(step.id, 'description', e.target.value)}
-                  variant="outlined"
-                />
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <FormControl fullWidth variant="outlined">
-                  <InputLabel id={`step-type-${step.id}`}>Step Type</InputLabel>
+            <Stack spacing={2}>
+              <TextField
+                fullWidth
+                multiline
+                rows={3}
+                label="Step Description"
+                value={step.description}
+                onChange={(e) => updateStep(step.id, 'description', e.target.value)}
+                variant="outlined"
+              />
+
+              <FormControl fullWidth>
+                <InputLabel id={`step-type-label-${step.id}`}>Step Type</InputLabel>
+                <Select
+                  labelId={`step-type-label-${step.id}`}
+                  value={step.type}
+                  onChange={(e) => updateStep(step.id, 'type', e.target.value)}
+                  label="Step Type"
+                >
+                  <MenuItem value="instruction">Instruction</MenuItem>
+                  <MenuItem value="cooking">Cooking</MenuItem>
+                </Select>
+              </FormControl>
+
+              <TextField
+                fullWidth
+                type="number"
+                label="Duration (minutes)"
+                value={step.durationMinutes}
+                onChange={(e) => updateStep(step.id, 'durationMinutes', +e.target.value)}
+                inputProps={{ min: 1 }}
+                variant="outlined"
+              />
+
+              {step.type === 'instruction' && (
+                <FormControl fullWidth>
+                  <InputLabel id={`ingredients-used-label-${step.id}`}>Ingredients Used</InputLabel>
                   <Select
-                    labelId={`step-type-${step.id}`}
-                    label="Step Type"
-                    value={step.type}
-                    onChange={(e) => updateStep(step.id, 'type', e.target.value)}
+                    labelId={`ingredients-used-label-${step.id}`}
+                    multiple
+                    value={step.ingredientIds || []}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      updateStep(step.id, 'ingredientIds', typeof val === 'string' ? val.split(',') : val);
+                    }}
+                    label="Ingredients Used"
+                    renderValue={(selected) => (
+                      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                        {selected.map((id) => {
+                          const ing = ingredients.find((i) => i.id === id);
+                          return (
+                            <Chip
+                              key={id}
+                              label={ing ? ing.name || 'Unnamed' : 'Unknown'}
+                              size="small"
+                              color="primary"
+                            />
+                          );
+                        })}
+                      </Box>
+                    )}
+                    MenuProps={{
+                      PaperProps: {
+                        style: { maxHeight: 224, width: 250 },
+                      },
+                    }}
                   >
-                    <MenuItem value="instruction">Instruction</MenuItem>
-                    <MenuItem value="cooking">Cooking</MenuItem>
+                    {ingredients.map((i) => (
+                      <MenuItem key={i.id} value={i.id}>
+                        {i.name || 'Unnamed'}
+                      </MenuItem>
+                    ))}
                   </Select>
                 </FormControl>
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <TextField
-                  fullWidth
-                  type="number"
-                  label="Duration (minutes)"
-                  value={step.durationMinutes}
-                  onChange={(e) => updateStep(step.id, 'durationMinutes', +e.target.value)}
-                  inputProps={{ min: 1 }}
-                  variant="outlined"
-                />
-              </Grid>
-              {step.type === 'instruction' && (
-                <Grid item xs={12}>
-                  <FormControl fullWidth variant="outlined">
-                    <InputLabel id={`ingredients-used-${step.id}`}>
-                      Ingredients Used
-                    </InputLabel>
-                    <Select
-                      labelId={`ingredients-used-${step.id}`}
-                      label="Ingredients Used"
-                      multiple
-                      value={step.ingredientIds || []}
-                      onChange={(e) =>
-                        updateStep(step.id, 'ingredientIds', Array.from(e.target.selectedOptions).map((o) => o.value))
-                      }
-                      renderValue={(selected) =>
-                        selected
-                          .map((id) => ingredients.find((i) => i.id === id)?.name)
-                          .filter(Boolean)
-                          .join(', ')
-                      }
-                    >
-                      {ingredients.map((i) => (
-                        <MenuItem key={i.id} value={i.id}>
-                          {i.name || 'Unnamed Ingredient'}
-                        </MenuItem>
-                      ))}
-                    </Select>
-                  </FormControl>
-                </Grid>
               )}
+
               {step.type === 'cooking' && (
-                <>
-                  <Grid item xs={12} sm={6}>
-                    <TextField
-                      fullWidth
-                      type="number"
-                      label="Temperature (°C)"
-                      value={step.cookingSettings?.temperature || 40}
-                      onChange={(e) =>
-                        updateStep(step.id, 'cookingSettings', {
-                          temperature: +e.target.value,
-                          speed: step.cookingSettings?.speed || 1,
-                        })
-                      }
-                      inputProps={{ min: 40, max: 200 }}
-                      variant="outlined"
-                    />
-                  </Grid>
-                  <Grid item xs={12} sm={6}>
-                    <TextField
-                      fullWidth
-                      type="number"
-                      label="Speed"
-                      value={step.cookingSettings?.speed || 1}
-                      onChange={(e) =>
-                        updateStep(step.id, 'cookingSettings', {
-                          temperature: step.cookingSettings?.temperature || 40,
-                          speed: +e.target.value,
-                        })
-                      }
-                      inputProps={{ min: 1, max: 5 }}
-                      variant="outlined"
-                    />
-                  </Grid>
-                </>
+                <Stack direction="row" spacing={2}>
+                  <TextField
+                    fullWidth
+                    type="number"
+                    label="Temperature (°C)"
+                    value={step.cookingSettings?.temperature || 40}
+                    onChange={(e) =>
+                      updateStep(step.id, 'cookingSettings', {
+                        temperature: +e.target.value,
+                        speed: step.cookingSettings?.speed || 1,
+                      })
+                    }
+                    inputProps={{ min: 40, max: 200 }}
+                    variant="outlined"
+                  />
+                  <TextField
+                    fullWidth
+                    type="number"
+                    label="Speed"
+                    value={step.cookingSettings?.speed || 1}
+                    onChange={(e) =>
+                      updateStep(step.id, 'cookingSettings', {
+                        temperature: step.cookingSettings?.temperature || 40,
+                        speed: +e.target.value,
+                      })
+                    }
+                    inputProps={{ min: 1, max: 5 }}
+                    variant="outlined"
+                  />
+                </Stack>
               )}
-            </Grid>
+            </Stack>
           </CardContent>
           <CardActions>
             <IconButton color="error" onClick={() => removeStep(step.id)}>
